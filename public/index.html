@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Question & Answers</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var socket = io();
+            socket.on('new_answer', function(data) {
+                var answersList = document.getElementById('answers-list');
+                var newAnswer = document.createElement('li');
+                newAnswer.textContent = `${data.username}: ${data.answer}`;
+                answersList.appendChild(newAnswer);
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Answer the question below:</h1>
+    <h2>What is your favorite hobby?</h2>
+    <form action="/submit" method="post">
+        <input type="text" name="username" placeholder="Your name" required>
+        <br><br>
+        <textarea name="answer" placeholder="Your answer" required></textarea>
+        <br><br>
+        <button type="submit">Submit Answer</button>
+    </form>
+    <h2>Answers:</h2>
+    <ul id="answers-list"></ul>
+</body>
+</html>
