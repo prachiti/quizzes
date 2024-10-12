@@ -58,6 +58,6 @@ io.on('connection', (socket) => {
   db.close();
 });
 
-server.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000');
+server.listen(() => {
+  console.log('Server is running');
 });
