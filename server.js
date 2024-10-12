@@ -1,25 +1,30 @@
-// Install required packages using: npm install express socket.io sqlite3
+// Install required packages using: npm install express socket.io firebase
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 const express = require('express');
-const http = require('http');
 const socketIo = require('socket.io');
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-const app = express();
-const server = http.createServer(app);
-const io = socketIo(server);
-
-const DATABASE = 'answers.db';
-
-// Initialize database
-const initDb = () => {
-  console.log('init DB');
-  const db = new sqlite3.Database(DATABASE);
-  db.run(`CREATE TABLE IF NOT EXISTS answers (id INTEGER PRIMARY KEY, username TEXT, answer TEXT)`);
-  db.close();
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyCWgopUFoAufk9FtR47Ig78LnHtUUue7-U",
+  authDomain: "learnwithme-96332.firebaseapp.com",
+  projectId: "learnwithme-96332",
+  storageBucket: "learnwithme-96332.appspot.com",
+  messagingSenderId: "118368378369",
+  appId: "1:118368378369:web:b2f144abc8b31ba7cf2a00",
+  measurementId: "G-BJL3N8P92C"
 };
 
-initDb();
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
+const db = getFirestore(firebaseApp);
+const analytics = getAnalytics(firebaseApp);
+
+const app = express();
+const server = require('http').createServer(app);
+const io = socketIo(server);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -28,38 +33,31 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/submit', (req, res) => {
-  console.error('in submit');
+app.post('/submit', async (req, res) => {
   const { username, answer } = req.body;
 
-  // Store answer in database
-  const db = new sqlite3.Database(DATABASE);
-  db.run('INSERT INTO answers (username, answer) VALUES (?, ?)', [username, answer], function(err) {
-    if (err) {
-      return console.error(err.message);
-    }
+  try {
+    // Store answer in Firebase Firestore
+    await addDoc(collection(db, 'answers'), { username, answer });
     // Notify all clients of the new answer
     io.emit('new_answer', { username, answer });
-  });
-  db.close();
-
-  res.redirect('/');
+    res.redirect('/');
+  } catch (err) {
+    console.error('Failed to insert answer', err);
+    res.status(500).send('Error storing answer');
+  }
 });
 
-io.on('connection', (socket) => {
-  // Send all previous answers to the newly connected client
-  const db = new sqlite3.Database(DATABASE);
-  db.all('SELECT username, answer FROM answers', [], (err, rows) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    rows.forEach((row) => {
-      socket.emit('new_answer', { username: row.username, answer: row.answer });
+io.on('connection', async (socket) => {
+  try {
+    // Send all previous answers to the newly connected client
+    const snapshot = await getDocs(collection(db, 'answers'));
+    snapshot.forEach((doc) => {
+      socket.emit('new_answer', { username: doc.data().username, answer: doc.data().answer });
     });
-  });
-  db.close();
+  } catch (err) {
+    console.error('Failed to retrieve answers', err);
+  }
 });
 
-server.listen(() => {
-  console.error('Server is running');
-});
+module.exports = app;
