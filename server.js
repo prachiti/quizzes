@@ -33,21 +33,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/submit', async (req, res) => {
-  const { username, answer } = req.body;
-
-  try {
-    // Store answer in Firebase Firestore
-    await addDoc(collection(db, 'answers'), { username, answer });
-    // Notify all clients of the new answer
-    io.emit('new_answer', { username, answer });
-    res.redirect('/');
-  } catch (err) {
-    console.error('Failed to insert answer', err);
-    res.status(500).send('Error storing answer');
-  }
-});
-
+// Socket.IO for real-time updates
 io.on('connection', async (socket) => {
   try {
     // Send all previous answers to the newly connected client
