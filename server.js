@@ -13,6 +13,7 @@ const DATABASE = 'answers.db';
 
 // Initialize database
 const initDb = () => {
+  console.log('init DB');
   const db = new sqlite3.Database(DATABASE);
   db.run(`CREATE TABLE IF NOT EXISTS answers (id INTEGER PRIMARY KEY, username TEXT, answer TEXT)`);
   db.close();
@@ -28,6 +29,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/submit', (req, res) => {
+  console.error('in submit');
   const { username, answer } = req.body;
 
   // Store answer in database
@@ -59,5 +61,5 @@ io.on('connection', (socket) => {
 });
 
 server.listen(() => {
-  console.log('Server is running');
+  console.error('Server is running');
 });
